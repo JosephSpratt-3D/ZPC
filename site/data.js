@@ -7,7 +7,7 @@ export function newOperation(number='OP 10',values={}){return {id:crypto.randomU
 export function normalizeSheet(input){
  const s=structuredClone(input);
  s.documentDate ||= String(s.createdAt||new Date().toISOString()).slice(0,10);
- s.materialSource ||= '';s.lessons ||= '';s.confidential=!!s.confidential;
+ s.materialSource ||= '';s.lessons ||= '';delete s.confidential;
  s.attachments ||= [];s.tools ||= [];s.photos ||= [];
  // Preserve legacy single-operation fields and migrate them into the first operation.
  if(!Array.isArray(s.operations))s.operations=[newOperation(s.operation||'OP 10',{machine:s.machine||'',program:s.program||'',workholding:s.workholding||'',datum:s.datum||'',notes:s.notes||''})];
@@ -27,7 +27,26 @@ export const getSheets=async()=>(await transaction('readonly',s=>s.getAll())).ma
 export const putSheet=sheet=>transaction('readwrite',s=>s.put(sheet));
 export const deleteSheet=id=>transaction('readwrite',s=>s.delete(id));
 export function validateSheet(s){if(!s||typeof s!=='object'||typeof s.id!=='string'||typeof s.title!=='string'||!s.title.trim()||!Array.isArray(s.tools)||!Array.isArray(s.photos))throw Error('This file is not a valid ZPC setup sheet.');if(s.photos.length>30||s.tools.length>100||(s.operations&&(!Array.isArray(s.operations)||s.operations.length>50)))throw Error('This setup sheet exceeds the import limits.');for(const p of s.photos){if(typeof p.data!=='string'||!/^data:image\/jpeg;base64,/.test(p.data))throw Error('Only embedded JPEG photos are accepted.');}for(const a of s.attachments||[]){if(typeof a.name!=='string'||typeof a.data!=='string'||!/^data:application\/pdf;base64,/.test(a.data))throw Error('Invalid PDF attachment.');}if(s.operations){const keys=['id','number','name','machine','program','workholding','jaws','stickOut','datum','setupNotes','notes'];const ids=new Set();for(const o of s.operations){if(!o||typeof o!=='object'||keys.some(k=>o[k]!==undefined&&typeof o[k]!=='string'))throw Error('Invalid operation data.');if(o.id&&ids.has(o.id))throw Error('Duplicate operation identifier.');ids.add(o.id);}}return normalizeSheet(s);}
-export async function resizePhoto(file){if(!file.type.startsWith('image/'))throw Error('Choose a supported image file.');if(file.size>25*1024*1024)throw Error('Photos must be smaller than 25 MB.');const bitmap=await createImageBitmap(file);const scale=Math.min(1,1600/Math.max(bitmap.width,bitmap.height));const c=document.createElement('canvas');c.width=Math.round(bitmap.width*scale);c.height=Math.round(bitmap.height*scale);const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(bitmap,0,0,c.width,c.height);bitmap.close();return {id:crypto.randomUUID(),name:file.name,caption:'',data:c.toDataURL('image/jpeg',.82),width:c.width,height:c.height};}
+// Use native image decoding first (including Safari's supported camera formats).
+// ImageBitmap is a fallback, rather than a requirement for photo attachments.
+export async function resizePhoto(file){
+ const imageName=/\.(jpe?g|png|webp|heic|heif|avif|gif|bmp)$/i.test(file.name||'');
+ if(!file.type.startsWith('image/')&&!imageName)throw Error('Choose an image such as a JPEG, PNG, or a supported camera photo.');
+ if(file.size>25*1024*1024)throw Error('Photos must be smaller than 25 MB.');
+ if(!file.size)throw Error('This photo is empty. Choose another photo.');
+ const url=URL.createObjectURL(file);let source,release=()=>{};
+ try{
+  try{source=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(Error('Image decode failed'));img.src=url;});}
+  catch{if(typeof createImageBitmap==='function'){source=await createImageBitmap(file);release=()=>source.close();}else throw Error('Image decode failed');}
+  const width=source.naturalWidth||source.width,height=source.naturalHeight||source.height;
+  if(!width||!height)throw Error('Image dimensions are unavailable');
+  const scale=Math.min(1,1600/Math.max(width,height));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(width*scale));c.height=Math.max(1,Math.round(height*scale));
+  const ctx=c.getContext('2d');if(!ctx)throw Error('Canvas unavailable');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(source,0,0,c.width,c.height);
+  const data=c.toDataURL('image/jpeg',.85);if(!data.startsWith('data:image/jpeg;base64,'))throw Error('Photo conversion failed');
+  return {id:crypto.randomUUID(),name:file.name||'Camera photo.jpg',caption:'',data,width:c.width,height:c.height};
+ }catch{throw Error(`Could not open ${file.name||'this photo'}. Try a JPEG or PNG, or on iPhone use Settings → Camera → Formats → Most Compatible for new photos.`);}
+ finally{release();URL.revokeObjectURL(url);}
+}
 export const escapeHTML=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function download(blob,name){const url=URL.createObjectURL(blob);const a=Object.assign(document.createElement('a'),{href:url,download:name});a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}
 export const filename=s=>(s.partNumber||s.title||'setup-sheet').replace(/[^a-z0-9_-]/gi,'-')+'-Rev-'+String(s.revision||'A').replace(/[^a-z0-9_-]/gi,'-');
