@@ -4,7 +4,7 @@ A browser-based CNC setup sheet workspace, styled after [Zero Point Cryogenics](
 
 ## Features
 
-- Milling, turning, and blank setup templates.
+- New setup sheet opens a blank editor directly, with one initial operation and no prefilled tools or machining instructions.
 - Reference-style machinist setup forms: part/material information and stock source, operation count, bordered workholding and tooling tables, operation notes, and lessons learned.
 - Add, edit, reorder, and remove up to 50 operations per sheet. Each operation has its own machine, program, fixture, jaws/clamping, part stick-out, datum, setup notes, and machining notes.
 - Photos can be assigned to an operation and categorized as setup, fixture/soft jaws, or finished part. Links survive operation reordering; removing an operation keeps its photos as general photos.
@@ -70,7 +70,7 @@ The editor, preview, print view, and direct PDF download include the operations 
 
 ## Validation
 
-`npm test` checks long-document PDF pagination and byte offsets, imported photo data validation, legacy migration, and long multi-operation tables. `tests/operations.cjs` additionally exercises operation creation, reordering, removal, photo associations, tooling requirements, save/reload, and phone layouts. Browser QA exercised template creation, tool editing, photo upload/captions, IndexedDB persistence across reload, search, preview, PDF download, and mobile overflow. The exported PDF was also parsed with `pdfinfo`. Camera hardware and Google authorization require testing on an authorized device/account.
+`npm test` checks long-document PDF pagination and byte offsets, imported photo data validation, legacy migration, and long multi-operation tables. `tests/operations.cjs` additionally exercises operation creation, reordering, removal, photo associations, tooling requirements, save/reload, and phone layouts. Browser QA exercised sheet creation, tool editing, photo upload/captions, IndexedDB persistence across reload, search, preview, PDF download, and mobile overflow. The exported PDF was also parsed with `pdfinfo`. Camera hardware and Google authorization require testing on an authorized device/account.
 
 Photo handling uses a DOM-attached native picker and native image decoding with an ImageBitmap fallback. Photos added to a named sheet are saved immediately; unsupported formats show an inline error. PDF downloads use embedded Liberation Sans fonts, a branded header, numbered sections, shaded tables, and framed photo grids. Font license: `site/licenses/liberation-fonts.txt`.
 
