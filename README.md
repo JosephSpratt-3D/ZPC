@@ -41,19 +41,18 @@ GitHub Pages hosts the app shell. Sheets and photos are never committed to GitHu
 
 ## Connect Google Drive
 
-The connection in ChatGPT does not supply authorization to visitors of this independent GitHub Pages application. This app uses Google Identity Services browser OAuth and the narrow `drive.file` scope. It does not use a client secret.
+Visitors open Google Drive and select **Connect with Google**. They choose a Google account and authorize the `drive.file` permission; no client-ID input is shown.
 
-1. Create/select a project in [Google Cloud Console](https://console.cloud.google.com/).
-2. Enable **Google Drive API**.
-3. Configure the Google Auth consent screen. If the application is in testing, add the Google accounts that will use it as test users. For an internal Workspace app, choose your organization's appropriate audience.
-4. Create an OAuth client ID with application type **Web application**.
-5. Add `https://josephspratt-3d.github.io` as an authorized JavaScript origin. For local testing also add `http://localhost:4173`. Origins do not contain `/ZPC/` or a trailing path.
-6. Paste the public client ID into the app's Google Drive screen, then click Connect Google Drive.
-7. Open a sheet and select Save to Drive. Return to Google Drive → Refresh Drive library to restore a snapshot on another browser/device.
+The site owner must complete one-time Google Cloud setup before the button can be activated:
 
-The public client ID persists in this browser's localStorage. Access tokens are kept only in memory, expire, and disappear on reload. Connect again when needed. Files are private under the signed-in Google account; the app never changes sharing permissions. Only files created by this app are listed. Each save creates a new snapshot rather than overwriting an earlier copy. A failed upload may leave a partial folder; retrying creates a new complete snapshot, and partial folders can be removed in Drive.
+1. Enable Google Drive API in a Google Cloud project.
+2. Configure Google Auth platform Branding and Audience. For External / Testing, add the intended Google accounts as test users.
+3. Create an OAuth **Web application** client with `https://josephspratt-3d.github.io` as an authorized JavaScript origin (without `/ZPC/`). Add `http://localhost:4173` or `http://localhost:4174` only if needed for local testing.
+4. Set the public client ID in `site/google-config.js` and commit it. Never add a client secret. GitHub Pages redeploys automatically.
 
-Drive upload/restore code requires a configured OAuth client and a real Google sign-in to validate end to end. No OAuth client is preconfigured in this first draft.
+Until a client ID is configured, the connection button stays disabled with a setup-pending message. A ChatGPT Google connection cannot provide authentication to this independent website.
+
+Access tokens remain only in memory. Connect again after reloading or when the token expires. Google Drive files stay private unless the account owner changes sharing. Uploads create a snapshot folder containing editable JSON, a PDF, photos, and reference PDFs. Restore creates a new local sheet. Failed uploads can leave partial folders; retrying creates a separate snapshot.
 
 ## Storage and document limits
 
