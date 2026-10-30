@@ -5,7 +5,11 @@ A browser-based CNC setup sheet workspace, styled after [Zero Point Cryogenics](
 ## Features
 
 - Milling, turning, and blank setup templates.
-- Editable job details, datums, workholding, tool tables, process notes, and inspection checks.
+- Reference-style machinist setup forms: part/material information and stock source, operation count, bordered workholding and tooling tables, operation notes, and lessons learned.
+- Add, edit, reorder, and remove up to 50 operations per sheet. Each operation has its own machine, program, fixture, jaws/clamping, part stick-out, datum, setup notes, and machining notes.
+- Photos can be assigned to an operation and categorized as setup, fixture/soft jaws, or finished part. Links survive operation reordering; removing an operation keeps its photos as general photos.
+- Special tooling requirements, cutting data, inspection checks, and optional confidential-part notice.
+- Legacy single-operation sheets and backups migrate automatically without deleting saved information.
 - Camera capture on supported phones, photo attachment and captions, and reference PDF attachment.
 - Search by name, part, machine, material, operation, or program; machine and status filters; sorting; grid/list views.
 - IndexedDB persistence for sheets, photos, and files; duplicate and delete; editable JSON export/import and whole-workspace backups.
@@ -60,9 +64,13 @@ Drive upload/restore code requires a configured OAuth client and a real Google s
 - PDFs list reference attachment names; reference PDFs remain separate files in backups and Drive, rather than being merged into the generated setup PDF.
 - Direct PDF download uses standard Latin fonts; use Print → Save as PDF for other scripts.
 
+## Updated document layout
+
+The editor, preview, print view, and direct PDF download include the operations added to each sheet. PDF tables repeat headings on continuation pages and split unusually long notes without truncating text. Existing JSON/Drive snapshots remain compatible; the additive operations fields are included in new backups.
+
 ## Validation
 
-`npm test` checks long-document PDF pagination and byte offsets, plus imported photo data validation. Browser QA exercised template creation, tool editing, photo upload/captions, IndexedDB persistence across reload, search, preview, PDF download, and mobile overflow. The exported PDF was also parsed with `pdfinfo`. Camera hardware and Google authorization require testing on an authorized device/account.
+`npm test` checks long-document PDF pagination and byte offsets, imported photo data validation, legacy migration, and long multi-operation tables. `tests/operations.cjs` additionally exercises operation creation, reordering, removal, photo associations, tooling requirements, save/reload, and phone layouts. Browser QA exercised template creation, tool editing, photo upload/captions, IndexedDB persistence across reload, search, preview, PDF download, and mobile overflow. The exported PDF was also parsed with `pdfinfo`. Camera hardware and Google authorization require testing on an authorized device/account.
 
 Optional browser regression script: `tests/browser.cjs` requires Playwright and a Chromium executable. It is a development check, not part of deployment.
 
