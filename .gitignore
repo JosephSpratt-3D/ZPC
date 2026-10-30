@@ -1,0 +1,4 @@
+node_modules/
+*.png
+!site/logo.png
+qa-sheet.pdf

@@ -1,0 +1,6 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {createPDF} from '../site/pdf.js';
+import {newSheet,validateSheet} from '../site/data.js';
+test('PDF paginates long instructions and maintains valid byte offsets',async()=>{const sheet={...newSheet('mill'),title:'Copper (plate) \\ Rev A',notes:'Prove the program in single block. '.repeat(1500)};const blob=createPDF(sheet);const bytes=new Uint8Array(await blob.arrayBuffer());const text=new TextDecoder().decode(bytes);assert.equal(blob.type,'application/pdf');assert.ok(text.startsWith('%PDF-1.4'));const root=text.match(/\/Type \/Pages \/Kids \[.*\] \/Count (\d+)/);assert.ok(Number(root[1])>1);const offset=Number(text.match(/startxref\n(\d+)/)[1]);assert.equal(new TextDecoder().decode(bytes.slice(offset,offset+4)),'xref');const entries=text.slice(offset).split('\n');const count=Number(entries[1].split(' ')[1]);for(let i=1;i<count;i++){const at=Number(entries[i+2].slice(0,10));assert.ok(new TextDecoder().decode(bytes.slice(at,at+20)).startsWith(`${i} 0 obj\n`));}});
+test('imports reject non-image data URLs',()=>{const sheet={...newSheet(),title:'Test',photos:[{data:'data:text/html;base64,PHNjcmlwdD4='}]};assert.throws(()=>validateSheet(sheet),/JPEG/);});
